@@ -23,6 +23,16 @@ export default class Board {
     }
   }
 
+  deleteList(listId) {
+    var list = this.findList(listId);
+    if (list) {
+      this.lists.splice(
+        this.lists.findIndex((listItem) => listItem.id === listId),
+        1
+      );
+    }
+  }
+
   addCard(listId, cardText) {
     var list = this.findList(listId);
     if (list) {

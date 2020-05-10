@@ -40,6 +40,19 @@ function handleListEdit(event) {
   }
 }
 
+function handleListDelete(event) {
+  let $listContainer = event.target.parentNode.parentNode;
+  let listId = Number($listContainer.getAttribute("data-id"));
+
+  const shouldDeleteList = confirm(
+    "Are you sure, you want to delete the list?"
+  );
+  if (shouldDeleteList) {
+    board.deleteList(listId);
+    renderBoard();
+  }
+}
+
 function handleCardEdit(event) {
   const cardId = Number(event.target.getAttribute("card-id"));
 
@@ -63,6 +76,15 @@ function handleCardDelete(event) {
   }
 }
 
+function createEditorIcon(Icon, idName, id, eventListenerHandle, classNames) {
+  let editorIcon = document.createElement("img");
+  editorIcon.src = Icon;
+  editorIcon.setAttribute(idName, id);
+  editorIcon.classList.add("editor--icon", classNames);
+  editorIcon.addEventListener("click", eventListenerHandle);
+  return editorIcon;
+}
+
 function renderBoard() {
   $boardContainer.innerHTML = "";
 
@@ -75,7 +97,22 @@ function renderBoard() {
 
     let $headerButton = document.createElement("button");
     $headerButton.textContent = list.title;
-    $headerButton.addEventListener("click", handleListEdit);
+
+    const $listEditIcon = createEditorIcon(
+      EditIcon,
+      "data-id",
+      list.id,
+      handleListEdit,
+      ["list--edit"]
+    );
+
+    const $listDeleteIcon = createEditorIcon(
+      DeleteIcon,
+      "data-id",
+      list.id,
+      handleListDelete,
+      ["list--delete"]
+    );
 
     let $cardUl = document.createElement("ul");
 
@@ -85,17 +122,20 @@ function renderBoard() {
       let $cardButton = document.createElement("button");
       $cardButton.draggable = true;
 
-      let $cardEditIcon = document.createElement("img");
-      $cardEditIcon.src = EditIcon;
-      $cardEditIcon.classList.add("card--editor--icon", "card--edit");
-      $cardEditIcon.setAttribute("card-id", card.id);
-      $cardEditIcon.addEventListener("click", handleCardEdit);
-
-      let $cardDeleteIcon = document.createElement("img");
-      $cardDeleteIcon.src = DeleteIcon;
-      $cardDeleteIcon.classList.add("card--editor--icon", "card--delete");
-      $cardDeleteIcon.setAttribute("card-id", card.id);
-      $cardDeleteIcon.addEventListener("click", handleCardDelete);
+      const $cardEditIcon = createEditorIcon(
+        EditIcon,
+        "card-id",
+        card.id,
+        handleCardEdit,
+        ["card--edit"]
+      );
+      const $cardDeleteIcon = createEditorIcon(
+        DeleteIcon,
+        "card-id",
+        card.id,
+        handleCardDelete,
+        ["card--delete"]
+      );
 
       $cardButton.textContent = card.text;
       $cardButton.setAttribute("card-id", card.id);
@@ -152,6 +192,8 @@ function renderBoard() {
     $addCardButton.addEventListener("click", handleCardCreate);
 
     $header.appendChild($headerButton);
+    $header.appendChild($listEditIcon);
+    $header.appendChild($listDeleteIcon);
     $listContainer.appendChild($header);
     $listContainer.appendChild($cardUl);
     $listContainer.appendChild($addCardButton);

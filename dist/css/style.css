@@ -839,6 +839,12 @@ header {
   outline-offset: -5px;
 }
 
+.list header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 .list header,
 .list.add > button {
   width: 100%;
@@ -894,7 +900,7 @@ header {
   height: 100%;
 }
 
-.list li .card--editor--icon {
+.editor--icon {
   width: 16px;
   height: 16px;
   margin-left: 2px;
