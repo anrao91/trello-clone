@@ -1,5 +1,7 @@
 // Global app controller
 import Board from "./board";
+import GetListDropDown from "./ui-components/listDropDown";
+import { findParentNode } from "./utils/";
 import EditIcon from "../images/editIcon.svg";
 import DeleteIcon from "../images/deleteIcon.svg";
 
@@ -17,39 +19,52 @@ function handleListCreate() {
 }
 
 function handleCardCreate(event) {
-  let $listContainer = event.target.parentNode;
-  let listId = Number($listContainer.getAttribute("data-id"));
+  const listContainer = findParentNode(event.target, "data-id");
+  if (listContainer) {
+    let listId = Number(listContainer.getAttribute("data-id"));
 
-  let cardText = prompt("New card text") || "";
+    let cardText = prompt("New card text") || "";
 
-  if (cardText.trim()) {
-    board.addCard(listId, cardText);
-    renderBoard();
+    if (cardText.trim()) {
+      board.addCard(listId, cardText);
+      renderBoard();
+    }
+  } else {
+    alert("List ID not found");
   }
 }
 
 function handleListEdit(event) {
-  let $listContainer = event.target.parentNode.parentNode;
-  let listId = Number($listContainer.getAttribute("data-id"));
+  const listContainer = findParentNode(event.target, "data-id");
+  if (listContainer) {
+    let listId = Number(listContainer.getAttribute("data-id"));
 
-  let listTitle = prompt("New list title") || "";
+    let listTitle = prompt("New list title") || "";
 
-  if (listTitle.trim()) {
-    board.editList(listId, listTitle);
-    renderBoard();
+    if (listTitle.trim()) {
+      board.editList(listId, listTitle);
+      console.log(board, listId, listTitle);
+      renderBoard();
+    }
+  } else {
+    alert("List ID not found");
   }
 }
 
 function handleListDelete(event) {
-  let $listContainer = event.target.parentNode.parentNode;
-  let listId = Number($listContainer.getAttribute("data-id"));
+  const listContainer = findParentNode(event.target, "data-id");
+  if (listContainer) {
+    let listId = Number(listContainer.getAttribute("data-id"));
 
-  const shouldDeleteList = confirm(
-    "Are you sure, you want to delete the list?"
-  );
-  if (shouldDeleteList) {
-    board.deleteList(listId);
-    renderBoard();
+    const shouldDeleteList = confirm(
+      "Are you sure, you want to delete the list?"
+    );
+    if (shouldDeleteList) {
+      board.deleteList(listId);
+      renderBoard();
+    }
+  } else {
+    alert("List ID not found");
   }
 }
 
@@ -76,13 +91,37 @@ function handleCardDelete(event) {
   }
 }
 
-function createEditorIcon(Icon, idName, id, eventListenerHandle, classNames) {
+export function createEditorIcon(
+  Icon,
+  idName,
+  id,
+  eventListenerHandle,
+  classNames
+) {
   let editorIcon = document.createElement("img");
   editorIcon.src = Icon;
   editorIcon.setAttribute(idName, id);
+  editorIcon.alt = "Editor Icon";
   editorIcon.classList.add("editor--icon", classNames);
-  editorIcon.addEventListener("click", eventListenerHandle);
+  if (eventListenerHandle) {
+    editorIcon.addEventListener("click", eventListenerHandle);
+  }
   return editorIcon;
+}
+function onDragStart(event, cardId) {
+  event.dataTransfer.setData("text", cardId);
+  event.dataTransfer.effectAllowed = "move";
+}
+
+function onDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.effectAllowed = "move";
+}
+function onDragEnter(event) {
+  event.preventDefault();
+}
+function onDrop(event) {
+  console.log(event.dataTransfer.getData("text"));
 }
 
 function renderBoard() {
@@ -93,25 +132,32 @@ function renderBoard() {
     $listContainer.className = "list";
     $listContainer.setAttribute("data-id", list.id);
 
+    $listContainer.addEventListener("dragover", onDragOver);
+    $listContainer.addEventListener("dragenter", onDragEnter);
+    $listContainer.addEventListener("drop", onDrop);
+
     let $header = document.createElement("header");
 
     let $headerButton = document.createElement("button");
     $headerButton.textContent = list.title;
 
-    const $listEditIcon = createEditorIcon(
-      EditIcon,
-      "data-id",
-      list.id,
-      handleListEdit,
-      ["list--edit"]
-    );
+    const $listEditIcon = createEditorIcon(EditIcon, "data-id", list.id, [
+      "list--edit",
+    ]);
 
-    const $listDeleteIcon = createEditorIcon(
-      DeleteIcon,
-      "data-id",
-      list.id,
-      handleListDelete,
-      ["list--delete"]
+    const $listDeleteIcon = createEditorIcon(DeleteIcon, "data-id", list.id, [
+      "list--delete",
+    ]);
+
+    //GetListDropDown(...dropDownItems)
+
+    const $listEditorDropDown = GetListDropDown(
+      {
+        name: "Edit",
+        image: $listEditIcon,
+        eventHandler: handleListEdit,
+      },
+      { name: "Delete", image: $listDeleteIcon, eventHandler: handleListDelete }
     );
 
     let $cardUl = document.createElement("ul");
@@ -146,45 +192,9 @@ function renderBoard() {
       $cardLi.appendChild($cardDeleteIcon);
       $cardUl.appendChild($cardLi);
 
-      $cardButton.ondragstart = function (evt) {
-        dragTracker.id = card.id;
-        evt.dataTransfer.effectAllowed = "move";
-      };
-
-      $cardButton.ondragover = function (evt) {
-        evt.preventDefault();
-        if (dragTracker.id) {
-          console.log(dragTracker);
-        }
-      };
-
-      $cardButton.ondrop = function (evt) {
-        let id = dragTracker.id,
-          targetId = this.getAttribute("card-id"), // 'this' is target of drop
-          source = list.cards[id],
-          target = list.cards[targetId];
-
-        if (id === targetId) {
-          return;
-        }
-        console.log(source, target, "source, target from ondrop");
-
-        // source.list.cardsNode.removeChild(source.card.node);
-        // target.list.cardsNode.insertBefore(
-        //   source.card.node,
-        //   target.card.node
-        // );
-
-        // board.reregisterSubsequent(source.list, source.index + 1, -1);
-        // source.list.cards.splice(source.index, 1);
-
-        // board.reregisterSubsequent(target.list, target.index + 1, 1);
-        // target.list.cards.splice(target.index + 1, 0, source.card);
-
-        // source.card.list = target.list;
-        // board.registerCard(source.card, target.index + 1);
-        evt.preventDefault();
-      };
+      $cardButton.addEventListener("dragstart", function (event) {
+        return onDragStart(event, card.id);
+      });
     });
 
     let $addCardButton = document.createElement("button");
@@ -192,8 +202,9 @@ function renderBoard() {
     $addCardButton.addEventListener("click", handleCardCreate);
 
     $header.appendChild($headerButton);
-    $header.appendChild($listEditIcon);
-    $header.appendChild($listDeleteIcon);
+    $header.appendChild($listEditorDropDown);
+    // $header.appendChild($listEditIcon);
+    // $header.appendChild($listDeleteIcon);
     $listContainer.appendChild($header);
     $listContainer.appendChild($cardUl);
     $listContainer.appendChild($addCardButton);
